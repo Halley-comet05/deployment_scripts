@@ -3,7 +3,7 @@
   
 import frappe  
 import openpyxl  
-from frappe.utils import flt, getdate  
+from frappe.utils import flt, getdate, rounded
 from lending.loan_management.doctype.loan_demand.loan_demand import create_loan_demand  
 from lending.loan_management.doctype.loan_repayment_schedule.utils import set_demand
   
@@ -52,13 +52,13 @@ def migrate_all():
 def migrate_loan(data):  
     loan_name = data["ID"]  
     payments_made = int(data.get("payments_made") or 0)  
-    loan_amount = flt(data["Loan Amount"])  
-    rate_of_interest = flt(data["Rate of Interest per year"])  
+    loan_amount = rounded(data["Loan Amount"], 2)  
+    rate_of_interest = rounded(data["Rate of Interest per year"], 2)  
     repayment_periods = int(data["Tenure"])  
     repayment_start_date = to_date(data["repayment Start date"])
     repayment_frequency = data["Repayment Schedule Type"]  
     posting_date = to_date(data["Posting Date"])
-    fees = flt(data["Fees"])
+    fees = rounded(data["Fees"], 2)
   
     if frappe.db.exists("Loan", loan_name):  
         print(f"  Skipping {loan_name} — already exists")  
@@ -140,7 +140,7 @@ def migrate_loan(data):
     schedule_name = frappe.db.get_value("Loan Repayment Schedule", {"loan_disbursement": disbursement.name}, "name")
     if schedule_name and payments_made > 0:
         schedule = frappe.get_doc("Loan Repayment Schedule", schedule_name)
-        monthly_repayment_amount = flt(schedule.repayment_schedule[0].total_payment) if schedule.repayment_schedule else 0
+        monthly_repayment_amount = rounded(schedule.repayment_schedule[0].total_payment, 2) if schedule.repayment_schedule else 0
         schedule.reload()
 
         for i, row in enumerate(schedule.repayment_schedule):  
@@ -153,12 +153,12 @@ def migrate_loan(data):
                     demand_date=row.payment_date,  
                     demand_type="EMI",  
                     demand_subtype="Principal",  
-                    amount=flt(row.principal_amount),  
+                    amount=rounded(row.principal_amount, 2),  
                     loan_repayment_schedule=schedule_name,  
                     loan_disbursement=disbursement.name,  
                     repayment_schedule_detail=row.name,  
                     posting_date=row.payment_date,  
-                    paid_amount=flt(row.principal_amount)  
+                    paid_amount=rounded(row.principal_amount, 2)  
                 )  
 
             if row.interest_amount:  
@@ -167,20 +167,20 @@ def migrate_loan(data):
                     demand_date=row.payment_date,  
                     demand_type="EMI",  
                     demand_subtype="Interest",  
-                    amount=flt(row.interest_amount),  
+                    amount=rounded(row.interest_amount, 2),  
                     loan_repayment_schedule=schedule_name,  
                     loan_disbursement=disbursement.name,  
                     repayment_schedule_detail=row.name,  
                     posting_date=row.payment_date,  
-                    paid_amount=flt(row.interest_amount)  
+                    paid_amount=rounded(row.interest_amount, 2)  
                 )  
 
             frappe.db.set_value("Repayment Schedule", row.name, "demand_generated", 1)
 
         frappe.db.commit()  
 
-        total_amount_paid = flt(data.get("Total Amount Paid") or 0)  
-        total_principal_paid = flt(data.get("Total Principal Paid") or 0)  
+        total_amount_paid = rounded(data.get("Total Amount Paid") or 0, 2)  
+        total_principal_paid = rounded(data.get("Total Principal Paid") or 0, 2)  
 
         frappe.db.set_value("Loan Repayment Schedule", schedule_name, {  
             "total_installments_paid": payments_made,  
@@ -197,7 +197,7 @@ def migrate_loan(data):
     else:
         if schedule_name:
             schedule = frappe.get_doc("Loan Repayment Schedule", schedule_name)
-            monthly_repayment_amount = flt(schedule.repayment_schedule[0].total_payment) if schedule.repayment_schedule else 0
+            monthly_repayment_amount = rounded(schedule.repayment_schedule[0].total_payment, 2) if schedule.repayment_schedule else 0
             frappe.db.set_value("Loan Repayment Schedule", schedule_name, {  
                 "monthly_repayment_amount": monthly_repayment_amount,  
             })  
