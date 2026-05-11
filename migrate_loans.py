@@ -2,6 +2,7 @@
 # Run with: bench --site your-site.local execute migrate_loans.migrate_all  
   
 import frappe  
+import traceback
 import openpyxl  
 from frappe.utils import flt, getdate, rounded
 from lending.loan_management.doctype.loan_demand.loan_demand import create_loan_demand  
@@ -33,7 +34,7 @@ def migrate_all():
             frappe.db.rollback()  
             results["failed"].append({  
                 "loan": data["ID"],  
-                "error": str(e)[:200]  
+                "error": traceback.format_exc()  
             })  
             print(f"  Error migrating {data['ID']}: {str(e)[:200]}")  
   
@@ -107,6 +108,7 @@ def migrate_loan(data):
     # --- 2. Create Loan Disbursement ---  
     disbursement = frappe.new_doc("Loan Disbursement")  
     disbursement.against_loan = actual_loan_name  
+    disbursement.loan = actual_loan_name
     disbursement.applicant_type = data["Applicant Type"]  
     disbursement.applicant = data["Applicant"]  
     disbursement.company = data["Company"]  
