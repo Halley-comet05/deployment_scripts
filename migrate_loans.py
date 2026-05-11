@@ -135,6 +135,7 @@ def migrate_loan(data):
     frappe.db.commit()  
   
     disbursement.reload()  
+    disbursement.flags.is_migration = true
     disbursement.submit()  
     frappe.db.commit()  
     print(f"  Disbursement submitted: {disbursement.name}")
