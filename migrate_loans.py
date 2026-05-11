@@ -58,6 +58,7 @@ def migrate_loan(data):
     repayment_periods = int(data["Tenure"])  
     repayment_start_date = to_date(data["repayment Start date"])
     repayment_frequency = data["Repayment Schedule Type"]  
+    monthly_repayment = data["Monthly Repayment"]
     posting_date = to_date(data["Posting Date"])
     fees = rounded(data["Fees"], 2)
   
@@ -80,6 +81,7 @@ def migrate_loan(data):
     loan.repayment_periods = repayment_periods  
     loan.repayment_frequency = repayment_frequency  
     loan.repayment_method = "Repay Over Number of Periods"
+    loan.monthly_repayment_amount = monthly_repayment
     loan.is_flat_rate_interest = 1  
     loan.status = "Sanctioned"
     loan.custom_account_number = data.get("Account Number")
@@ -116,7 +118,7 @@ def migrate_loan(data):
     disbursement.disbursement_date = posting_date
     disbursement.disbursed_amount = loan_amount  
     disbursement.custom_upfront_fees = fees
-    disbursement.repayment_start_date = repayment_start_date  
+    disbursement.repayment_start_date = posting_date
     disbursement.repayment_periods = repayment_periods  
     disbursement.repayment_frequency = repayment_frequency  
     disbursement.rate_of_interest = rate_of_interest  
@@ -135,7 +137,7 @@ def migrate_loan(data):
     frappe.db.commit()  
   
     disbursement.reload()  
-    disbursement.flags.is_migration = true
+    disbursement.flags.is_migration = True
     disbursement.submit()  
     frappe.db.commit()  
     print(f"  Disbursement submitted: {disbursement.name}")
